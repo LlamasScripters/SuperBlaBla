@@ -4,9 +4,10 @@ import { formatDistanceToNow } from "date-fns"
 interface MessageListProps {
   messages: Message[]
   currentUserId?: string
+  currentUserColor?: string
 }
 
-export default function MessageList({ messages, currentUserId }: MessageListProps) {
+export default function MessageList({ messages, currentUserId, currentUserColor }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -32,19 +33,19 @@ export default function MessageList({ messages, currentUserId }: MessageListProp
                     {message.userName?.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="text-xs text-slate-500">{isCurrentUser ? "You" : message.userName}</span>
+                <span className="text-xs text-slate-500">{message.userName}</span>
                 <span className="text-xs text-slate-400">
                   {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                 </span>
               </div>
 
               <div
-                className={`px-4 py-2 rounded-lg ${
-                  isCurrentUser ? "bg-emerald-600 text-white" : "bg-white border border-slate-200"
-                }`}
-                style={
-                  !isCurrentUser && message.userColor ? { backgroundColor: message.userColor, color: "white" } : {}
-                }
+                className={`px-4 py-2 rounded-lg text-white`}
+                style={{
+                  backgroundColor: isCurrentUser 
+                    ? currentUserColor || "#10b981"
+                    : message.userColor || "#10b981"
+                }}
               >
                 {message.content}
               </div>

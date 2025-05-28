@@ -9,22 +9,104 @@ import { Input } from "@/components/ui/input"
 import { Message } from "../lib/types"
 import ChatHeader from "../components/chat-header"
 import MessageList from "../components/message-list"
+import socket from "../lib/socket"
 
 export default function ChatPage() {
   const [messageText, setMessageText] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const [currentUserId, setCurrentUserId] = useState("")
+  const [currentUserName, setCurrentUserName] = useState("")
+  const [currentUserColor, setCurrentUserColor] = useState("#10b981")
 
+  useEffect(() => {
+    const userStr = localStorage.getItem("user")
+    if (!userStr) {
+      router.push("/login")
+    } else {
+      try {
+        const user = JSON.parse(userStr)
+        setCurrentUserId(user.id)
+        setCurrentUserName(user.user_metadata?.name || user.name || "")
+        setCurrentUserColor(user.color || "#10b981")
+      } catch (error) {
+        router.push("/login")
+      }
+    }
+  }, [router])
 
+  useEffect(() => {
+    socket.on("message", (msg: any) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString() + Math.random(),
+          content: msg.text,
+          userId: msg.userId,
+          userName: msg.sender,
+          userColor: msg.color,
+          timestamp: msg.timestamp || new Date().toISOString(),
+        },
+      ])
+    })
 
-  // Scroll to bottom when messages change
+    socket.on("profileColorChanged", ({ sender, color }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.userId === sender ? { ...msg, userColor: color } : msg
+        )
+      )
+      
+      if (sender === currentUserId) {
+        setCurrentUserColor(color)
+        const userStr = localStorage.getItem("user")
+        if (userStr) {
+          const user = JSON.parse(userStr)
+          user.color = color
+          localStorage.setItem("user", JSON.stringify(user))
+        }
+      }
+    })
+
+    return () => {
+      socket.off("message")
+      socket.off("profileColorChanged")
+    }
+  }, [currentUserId])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "user" && e.newValue) {
+        const user = JSON.parse(e.newValue)
+        setCurrentUserColor(user.color || "#10b981")
+      }
+    }
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [])
+
   const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!messageText.trim()) return
     
+    setIsLoading(true)
+    try {
+      socket.emit("message", {
+        sender: currentUserName,
+        text: messageText,
+        userId: currentUserId,
+        color: currentUserColor,
+      })
+      setMessageText("")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -33,7 +115,11 @@ export default function ChatPage() {
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-4xl mx-auto">
-          <MessageList messages={messages} currentUserId={""} />
+          <MessageList 
+            messages={messages} 
+            currentUserId={currentUserId} 
+            currentUserColor={currentUserColor} 
+          />
           <div ref={messagesEndRef} />
         </div>
       </div>

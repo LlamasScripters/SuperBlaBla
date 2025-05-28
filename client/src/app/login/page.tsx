@@ -46,7 +46,25 @@ export default function LoginPage() {
       // Validate form data
       loginSchema.parse(formData)
 
-      // Call server action to login user
+      // Appel à l'API de connexion
+      const response = await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setErrors({ global: data.message || "Erreur lors de la connexion" })
+        return
+      }
+      // Stockage du user et/ou token dans le localStorage
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user))
+      }
+      // Redirection vers la page de chat
+      router.push("/chat")
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {}
@@ -57,6 +75,7 @@ export default function LoginPage() {
         })
         setErrors(newErrors)
       } else {
+        setErrors({ global: "Erreur inattendue" })
       }
     } finally {
       setIsLoading(false)
@@ -97,6 +116,7 @@ export default function LoginPage() {
               />
               {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
             </div>
+            {errors.global && <p className="text-sm text-red-500 text-center">{errors.global}</p>}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>

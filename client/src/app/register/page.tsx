@@ -43,10 +43,35 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      
+      registerSchema.parse(formData);
+      const response = await fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setErrors({ global: data.message || "Erreur lors de l'inscription" });
+        return;
+      }
+      // Redirection vers la page de connexion
+      router.push("/login");
     } catch (error) {
-      
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            newErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      } else {
+        setErrors({ global: "Erreur inattendue" });
+      }
     } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,6 +123,7 @@ export default function RegisterPage() {
               />
               {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
             </div>
+            {errors.global && <p className="text-sm text-red-500 text-center">{errors.global}</p>}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>

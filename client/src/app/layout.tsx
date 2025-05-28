@@ -6,7 +6,7 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ChatNexus - Real-time Chat Application",
+  title: "SuperBlaBla - Real-time Chat Application",
   description: "A real-time chat application with user authentication and customizable profiles",
 }
 

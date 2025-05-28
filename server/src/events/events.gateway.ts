@@ -1,4 +1,3 @@
-// server/src/events/events.gateway.ts
 import {
     SubscribeMessage,
     WebSocketGateway,
@@ -28,61 +27,49 @@ export class EventsGateway implements OnGatewayInit {
     @SubscribeMessage('message')
     async handleMessage(
         client: Socket,
-        payload: { sender: string; text: string; userId: string },
+        payload: { sender: string; text: string; userId: string, color: string },
     ): Promise<void> {
         try {
+            if (!payload.userId) {
+                return;
+            }
             
-            const { data } = await this.supabaseService
-                .getClient()
-                .from('profiles')
-                .select('color')
-                .eq('id', payload.userId)
-                .single();
-
-            const color = data?.color || '#000000'; 
-
-            console.log(`Message from ${payload.sender}: ${payload.text}`);
-            
-           
-            this.server.emit('message', {
+            const messageData = {
                 sender: payload.sender,
+                userId: payload.userId,
                 text: payload.text,
-                color: color,
-                timestamp: new Date(),
-            });
+                color: payload.color || '#10b981',
+                timestamp: new Date().toISOString(),
+            };
+            
+            this.server.emit('message', messageData);
+            
         } catch (error) {
-            console.error('Erreur lors de la récupération de la couleur:', error);
-            
             this.server.emit('message', {
-                sender: payload.sender,
-                text: payload.text,
-                color: '#000000',
-                timestamp: new Date(),
+                sender: payload.sender || 'Utilisateur',
+                userId: payload.userId || 'unknown',
+                text: payload.text || '',
+                color: payload.color || '#10b981',
+                timestamp: new Date().toISOString(),
             });
         }
     }
 
     @SubscribeMessage('changeColor')
-    async handleChangeColor(client: Socket, payload: { userId: string, color: string }) {
+    async handleChangeColor(client: Socket, payload: { sender: string, color: string }) {
         try {
-            // Mettre à jour la couleur dans Supabase
-            const { error } = await this.supabaseService
-                .getClient()
-                .from('profiles')
-                .upsert({ 
-                    id: payload.userId, 
-                    color: payload.color 
-                });
-
-            if (error) throw error;
-
-            // Notifier tous les clients du changement
-            this.server.emit('profileColorChanged', { 
-                userId: payload.userId, 
-                color: payload.color 
-            });
+            if (!payload.sender) {
+                return;
+            }
+            
+            const colorChangeData = {
+                sender: payload.sender,
+                color: payload.color
+            };
+            
+            this.server.emit('profileColorChanged', colorChangeData);
+            
         } catch (error) {
-            console.error('Erreur lors du changement de couleur:', error);
             client.emit('error', { message: 'Erreur lors du changement de couleur' });
         }
     }
