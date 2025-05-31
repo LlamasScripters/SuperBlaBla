@@ -2,7 +2,7 @@
 
 ## ⚠️ Important - Base de données
 
-**CONTACTEZ-MOI EN GRAS POUR RÉACTIVER LA BASE DE DONNÉES SUPABASE** sinon la connexion ne fonctionnera pas.
+**CONTACTEZ-MOI POUR RÉACTIVER LA BASE DE DONNÉES SUPABASE** sinon la connexion ne fonctionnera pas.
 
 Contact moi sur Discord : ariaaaaaaaaaaa
 
